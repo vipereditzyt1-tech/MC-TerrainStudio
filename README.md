@@ -95,7 +95,8 @@ installers embed at `build/mcreator-plugin/terrain-studio.zip`.
 
 The Windows installers carry that copy as a resource and the app installs it into
 `%USERPROFILE%\.mcreator\plugins` on launch (only when a `.mcreator` folder exists, and only when the
-copy differs), so a fresh install needs no manual step.
+copy differs), so a fresh install needs no manual step. Windows will not replace the zip while MCreator
+holds it open, so a plugin update lands the next time the app starts with MCreator closed.
 
 From then on the two programs talk directly: **Send to MCreator** in the Minecraft panel hands the package
 to the plugin through `%USERPROFILE%\.terrainstudio\handoff`, and the open workspace asks for confirmation

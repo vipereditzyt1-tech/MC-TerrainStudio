@@ -185,6 +185,9 @@ async function installBundledMcreatorPlugin() {
   try {
     const outcome = await installMcreatorPlugin({ pluginZip: bundledPluginZip, homeDirectory: os.homedir() })
     console.log(`MCreator plugin: ${outcome.status} (${outcome.target})`)
+    if (outcome.status === 'locked') {
+      console.warn('MCreator plugin: MCreator is holding the plugin file open; start Terrain Studio once after closing MCreator to update it.')
+    }
     if (outcome.staleFolder) {
       console.warn(`MCreator plugin: ${outcome.staleFolder} is an extracted copy of the same plugin — remove it or MCreator loads both.`)
     }

@@ -7,7 +7,7 @@
  * would load the same plugin twice). Nothing here calls MCreator: it is a file copy, which means it
  * still works when MCreator is closed, and does nothing at all when MCreator was never installed.
  */
-import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 export const PLUGIN_ID = 'terrain-studio'
@@ -15,9 +15,10 @@ export const PLUGIN_ID = 'terrain-studio'
 export type PluginInstallOutcome = {
   /**
    * installed: the zip was written. already-current: an identical copy was already in place.
-   * no-mcreator: the user has no `~/.mcreator`, so nothing was touched.
+   * no-mcreator: the user has no `~/.mcreator`, so nothing was touched. locked: a running MCreator
+   * holds the zip open, which Windows will not let us replace until it exits.
    */
-  status: 'installed' | 'already-current' | 'no-mcreator'
+  status: 'installed' | 'already-current' | 'no-mcreator' | 'locked'
   /** Absolute path of the zip inside MCreator's plugin folder. */
   target: string
   /** An extracted copy of this same plugin that would make MCreator load it twice. */
@@ -69,6 +70,15 @@ export async function installMcreatorPlugin(options: {
   // Write beside the target and rename: MCreator must never open a half-written zip.
   const temporary = `${target}.${process.pid}.tmp`
   await writeFile(temporary, bundled)
-  await rename(temporary, target)
+  try {
+    await rename(temporary, target)
+  } catch (error) {
+    await rm(temporary, { force: true })
+    // MCreator keeps the zip open while it runs, and Windows refuses to replace an open file. The
+    // next launch installs it, so leave the old copy alone rather than half-applying an update.
+    const code = (error as NodeJS.ErrnoException).code
+    if (code === 'EPERM' || code === 'EACCES' || code === 'EBUSY') return { status: 'locked', target, staleFolder }
+    throw error
+  }
   return { status: 'installed', target, staleFolder }
 }
