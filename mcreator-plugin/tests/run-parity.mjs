@@ -66,7 +66,7 @@ function run(command, args, options = {}) {
 // Compile the engine so Node can import the exact module the app uses.
 fs.rmSync(engineOut, { recursive: true, force: true })
 run(process.execPath, [path.join(root, 'node_modules', 'typescript', 'bin', 'tsc'),
-  'src/terrainEngine.ts', '--outDir', engineOut, '--module', 'es2022', '--target', 'es2022',
+  'src/engine/terrainEngine.ts', '--outDir', engineOut, '--module', 'es2022', '--target', 'es2022',
   '--moduleResolution', 'bundler', '--skipLibCheck',
 ])
 const engine = await import(pathToFileURL(path.join(engineOut, 'terrainEngine.js')).href)
@@ -386,4 +386,4 @@ if (failures > 0) {
   console.error(`${failures} noise type(s) differ between the preview engine and the MCreator compiler`)
   process.exit(1)
 }
-console.log('PASS all noise types match between src/terrainEngine.ts and generated Java')
+console.log('PASS all noise types match between src/engine/terrainEngine.ts and generated Java')
