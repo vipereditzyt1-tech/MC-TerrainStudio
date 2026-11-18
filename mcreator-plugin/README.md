@@ -22,6 +22,10 @@ and writes `mcreator-plugin/dist/terrain-studio.zip`. `MCREATOR_HOME` can be use
 
 ## Install
 
+**From the Terrain Studio installers** — nothing to do: the app ships this zip as a resource and writes it
+into `%USERPROFILE%\.mcreator\plugins` on launch, skipping machines without a `.mcreator` folder and
+leaving an identical copy untouched. **By hand:**
+
 1. Close MCreator.
 2. Copy `terrain-studio.zip` into `%USERPROFILE%\.mcreator\plugins\` (keep it zipped).
 3. Start MCreator. If it warns that Java plugins are disabled, allow them in the dialog/Preferences and

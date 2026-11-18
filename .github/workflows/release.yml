@@ -84,6 +84,11 @@ jobs:
           shopt -s nullglob
           files=( *.exe *.msi SHA256SUMS.txt )
           printf 'publishing: %s\n' "${files[@]}"
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
-            --notes "Terrain Studio $GITHUB_REF_NAME. Windows installers (NSIS setup, portable, and MSI when the runner could build it) with SHA256SUMS.txt. Unsigned: SmartScreen warns on a machine that has not seen the build before." \
-            "${files[@]}"
+          # A re-cut of the same tag has to replace the assets instead of failing on the existing release.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
+              --notes "Terrain Studio $GITHUB_REF_NAME. Windows installers (NSIS setup, portable, and MSI) with SHA256SUMS.txt, including the MCreator plugin the app installs into %USERPROFILE%\\.mcreator\\plugins on first launch. Unsigned: SmartScreen warns on a machine that has not seen the build before." \
+              "${files[@]}"
+          fi

@@ -8,6 +8,7 @@
  * Usage: node mcreator-plugin/tests/run-tests.mjs [--mcreator "<MCreator install>"]
  */
 import { spawnSync } from 'node:child_process'
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -53,6 +54,14 @@ const zip = path.join(root, 'mcreator-plugin', 'dist', 'terrain-studio.zip')
 const classpath = [zip, path.join(install, 'lib', '*')].join(path.delimiter)
 
 run(process.execPath, [path.join(root, 'mcreator-plugin', 'build.mjs'), '--mcreator', install])
+
+// The installers embed a committed copy of this zip, because packaging happens on machines without
+// MCreator. A rebuilt plugin that was never copied forward would ship an old plugin in every
+// installer while every test above still passed against the new one.
+const shipped = path.join(root, 'build', 'mcreator-plugin', 'terrain-studio.zip')
+const digest = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+if (!fs.existsSync(shipped)) fail('build/mcreator-plugin/terrain-studio.zip is missing — run npm run plugin:bundle')
+if (digest(shipped) !== digest(zip)) fail('build/mcreator-plugin/terrain-studio.zip is out of date — run npm run plugin:bundle')
 
 const classes = path.join(root, '.freebuff', 'plugin-build', 'test-run', 'classes')
 const workspace = path.join(root, '.freebuff', 'plugin-build', 'test-run', 'workspace')

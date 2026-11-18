@@ -1,5 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { IPC } from './ipc'
+import { installMcreatorPlugin } from './mcreatorPlugin'
+import os from 'node:os'
 import { open, writeFile, rename, unlink, mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -172,6 +174,24 @@ function isTrustedNavigation(target: string): boolean {
   }
 }
 
+// The installer carries the MCreator plugin as a resource; hand it to MCreator on launch so a fresh
+// install needs no manual copy. A failure here must never keep the editor from starting.
+const bundledPluginZip = app.isPackaged
+  ? path.join(process.resourcesPath, 'terrain-studio-plugin.zip')
+  : path.join(process.env.APP_ROOT ?? '', 'build', 'mcreator-plugin', 'terrain-studio.zip')
+
+async function installBundledMcreatorPlugin() {
+  try {
+    const outcome = await installMcreatorPlugin({ pluginZip: bundledPluginZip, homeDirectory: os.homedir() })
+    console.log(`MCreator plugin: ${outcome.status} (${outcome.target})`)
+    if (outcome.staleFolder) {
+      console.warn(`MCreator plugin: ${outcome.staleFolder} is an extracted copy of the same plugin — remove it or MCreator loads both.`)
+    }
+  } catch (error) {
+    console.warn(`MCreator plugin: could not install from ${bundledPluginZip}: ${String(error)}`)
+  }
+}
+
 function createWindow() {
   // A recreated window (macOS activate) starts clean until the renderer says otherwise.
   projectDirty = false
@@ -242,7 +262,10 @@ if (!app.requestSingleInstanceLock()) {
     win.focus()
   })
 
-  app.whenReady().then(createWindow)
+  app.whenReady().then(async () => {
+    await installBundledMcreatorPlugin()
+    createWindow()
+  })
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common

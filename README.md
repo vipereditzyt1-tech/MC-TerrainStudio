@@ -90,8 +90,14 @@ The reusable plugin lives in `mcreator-plugin/` and is documented in
 node mcreator-plugin/build.mjs --mcreator "<path to MCreator install>"
 ```
 
-That writes `mcreator-plugin/dist/terrain-studio.zip`. Copy it into `%USERPROFILE%\.mcreator\plugins`,
-restart MCreator, open a NeoForge workspace and use **Terrain Studio → Import Terrain Studio package…**.
+That writes `mcreator-plugin/dist/terrain-studio.zip`; `npm run plugin:bundle` also refreshes the copy the
+installers embed at `build/mcreator-plugin/terrain-studio.zip`.
+
+The Windows installers carry that copy as a resource and the app installs it into
+`%USERPROFILE%\.mcreator\plugins` on launch (only when a `.mcreator` folder exists, and only when the
+copy differs), so a fresh install needs no manual step. For a development build, copy the zip there
+yourself, restart MCreator, open a NeoForge workspace and use **Terrain Studio → Import Terrain Studio
+package…**.
 
 The plugin validates the package, lists the files it will create or replace, backs up anything it replaces,
 records SHA-256 hashes and refuses to overwrite files edited outside Terrain Studio. **Roll back last

@@ -11,6 +11,14 @@
     "dist",
     "dist-electron"
   ],
+  // The MCreator plugin rides along as a resource so the app can install it into MCreator on launch.
+  // Rebuild it with `npm run plugin:bundle`; the copy is committed because packaging runs without MCreator.
+  "extraResources": [
+    {
+      "from": "build/mcreator-plugin/terrain-studio.zip",
+      "to": "terrain-studio-plugin.zip"
+    }
+  ],
   "mac": {
     "target": [
       "dmg"
