@@ -79,8 +79,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd "release/$(ls release | head -n 1)"
-          ASSETS=$(ls *.exe *.msi 2>/dev/null | tr '\n' ' ')
-          echo "publishing: $ASSETS SHA256SUMS.txt"
+          # The artifact names contain spaces, so build a real array: an unquoted $ASSETS would
+          # split every filename into separate arguments.
+          shopt -s nullglob
+          files=( *.exe *.msi SHA256SUMS.txt )
+          printf 'publishing: %s\n' "${files[@]}"
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
             --notes "Terrain Studio $GITHUB_REF_NAME. Windows installers (NSIS setup, portable, and MSI when the runner could build it) with SHA256SUMS.txt. Unsigned: SmartScreen warns on a machine that has not seen the build before." \
-            $ASSETS SHA256SUMS.txt
+            "${files[@]}"
