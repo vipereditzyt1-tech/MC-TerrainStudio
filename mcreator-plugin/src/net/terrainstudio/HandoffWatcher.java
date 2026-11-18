@@ -23,8 +23,12 @@ import java.util.stream.Stream;
  * an import is never offered twice — even if the receiver declines it.
  */
 public final class HandoffWatcher {
-    /** Called on the watcher thread for each package; the plugin hops to the UI thread itself. */
-    public interface Receiver { void accept(Path packageFile); }
+    /**
+     * Called on the watcher thread for each package, after the package has been claimed. Returns
+     * whether it was taken: `false` puts the package back so it is offered again later, which is how a
+     * package sent while MCreator has no workspace open survives instead of being dropped.
+     */
+    public interface Receiver { boolean accept(Path packageFile); }
 
     private HandoffWatcher() { }
 
@@ -65,6 +69,20 @@ public final class HandoffWatcher {
         }
     }
 
+    /**
+     * Offers whatever is queued right now. Called when a workspace window appears, because packages
+     * that arrived while MCreator had no workspace were deliberately left in the folder.
+     */
+    public static void sweep(Path directory, Receiver receiver) {
+        try {
+            Path archive = directory.resolve("archive");
+            Files.createDirectories(archive);
+            deliverQueued(directory, archive, receiver);
+        } catch (IOException error) {
+            System.err.println("[Terrain Studio] could not scan " + directory + ": " + error.getMessage());
+        }
+    }
+
     private static void deliverQueued(Path directory, Path archive, Receiver receiver) throws IOException {
         try (Stream<Path> entries = Files.list(directory)) {
             for (Path entry : entries.sorted().toList()) deliver(entry, archive, receiver);
@@ -73,12 +91,15 @@ public final class HandoffWatcher {
 
     private static void deliver(Path candidate, Path archive, Receiver receiver) {
         if (!isPackage(candidate)) return;
+        Path claimed = null;
         try {
             // Moving first claims the package: a second event for the same path finds nothing to move.
-            Path claimed = Files.move(candidate,
+            claimed = Files.move(candidate,
                     archive.resolve(System.currentTimeMillis() + "-" + candidate.getFileName()),
                     StandardCopyOption.REPLACE_EXISTING);
-            receiver.accept(claimed);
+            if (receiver.accept(claimed)) return;
+            // Nothing could take it yet; put it back where it was so the next workspace offers it.
+            Files.move(claimed, candidate, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException | RuntimeException error) {
             System.err.println("[Terrain Studio] could not hand off " + candidate + ": " + error.getMessage());
         }

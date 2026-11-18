@@ -30,11 +30,18 @@ public class TerrainStudioPlugin extends JavaPlugin {
      */
     private static void startHandoff() {
         if (!HANDOFF_STARTED.compareAndSet(false, true)) return;
-        HandoffWatcher.start(HandoffWatcher.directory(), packageFile -> SwingUtilities.invokeLater(() -> {
-            MCreator target = activeWindow;
-            if (target == null) return;
-            importFrom(target, packageFile);
-        }));
+        HandoffWatcher.start(HandoffWatcher.directory(), TerrainStudioPlugin::offerToActiveWindow);
+    }
+
+    /**
+     * Takes a package for the newest window, or declines so the watcher keeps it queued. Declining
+     * matters: MCreator can be open with no workspace, and a package imported into nothing is lost.
+     */
+    private static boolean offerToActiveWindow(Path packageFile) {
+        MCreator target = activeWindow;
+        if (target == null) return false;
+        SwingUtilities.invokeLater(() -> importFrom(target, packageFile));
+        return true;
     }
 
     private static void addMenu(MCreator mcreator) {
@@ -69,6 +76,9 @@ public class TerrainStudioPlugin extends JavaPlugin {
 
         mcreator.getMainMenuBar().add(menu);
         mcreator.getMainMenuBar().revalidate();
+
+        // A workspace is now open, so anything sent while MCreator sat on its start screen can be offered.
+        HandoffWatcher.sweep(HandoffWatcher.directory(), TerrainStudioPlugin::offerToActiveWindow);
     }
 
     private static String workspaceGenerator(MCreator mcreator, Workspace workspace) {
