@@ -1,0 +1,11 @@
+{
+  "id": "terrain-studio",
+  "supportedversions": [202600233518],
+  "javaplugin": "net.terrainstudio.TerrainStudioPlugin",
+  "info": {
+    "name": "Terrain Studio",
+    "description": "Imports a Terrain Studio graph as Overworld terrain in a supported NeoForge workspace.",
+    "version": "0.1.0",
+    "author": "Terrain Studio"
+  }
+}
