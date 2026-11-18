@@ -4,6 +4,26 @@
   "version": "0.1.0",
   "description": "Visual terrain authoring for Minecraft, with an MCreator worldgen integration.",
   "author": "Terrain Studio",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vipereditzyt1-tech/MC-TerrainStudio.git"
+  },
+  "homepage": "https://github.com/vipereditzyt1-tech/MC-TerrainStudio#readme",
+  "bugs": {
+    "url": "https://github.com/vipereditzyt1-tech/MC-TerrainStudio/issues"
+  },
+  "keywords": [
+    "minecraft",
+    "terrain",
+    "worldgen",
+    "world-generation",
+    "mcreator",
+    "noise",
+    "heightmap",
+    "electron",
+    "react",
+    "node-editor"
+  ],
   "type": "module",
   "engines": {
     "node": ">=18"

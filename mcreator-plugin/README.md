@@ -108,14 +108,14 @@ schemas. If the menu is missing, check the installed MCreator build first.
 - `mcreator-plugin/build.mjs` produces the zip with MCreator's own bundled JDK; the rebuilt zip was loaded
   by MCreator 2026.2.33518 with no plugin errors.
 - Compiler, installer, update and conflict behaviour are covered by `tests/TerrainCompilerTest.java`;
-  `npm test` covers package validation and unsupported-node rejection (35 tests).
+  `npm test` covers package validation and unsupported-node rejection.
 - Generated Java for both 26.1.2 and 1.21.1 compiles against real Minecraft/NeoForge artifacts, and every
   supported noise type plus the shaping nodes match the TypeScript preview (max difference ≈2e-8).
 - **Live NeoForge 26.1.2 server, all three modes:** Overworld replacement reports `wired=true` and graph
   heights; a custom dimension loads with its own `minY`/`maxY`, exact density, and surfaces at
   `TerrainStudioWorldgen.height(x, z)` for positive and negative coordinates; a world preset selected with
   `level-type` drives the real Overworld at the same heights with vanilla Nether and End present. Fresh
-  worlds report `RESULT PASS`; see `.freebuff/mcreator-disposable/run/terrain-integration-report.txt`.
+  worlds report `RESULT PASS`.
 - **Not verified:** the MCreator menu action has not been clicked in a GUI session (its compiler/installer
   path is tested), and world creation through MCreator itself has not been exercised. The exact-height
   dimension run used a fixed `minecraft:the_void` biome; vanilla-biome dimensions keep carvers and features.

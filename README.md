@@ -1,43 +1,76 @@
 # Terrain Studio
 
-A desktop editor for procedural Minecraft terrain. Build a height graph, preview it in the app, export it
-as a heightmap PNG, or export a `.tsmc` integration package for MCreator. Minecraft then evaluates the
-compiled graph at runtime for a replaced Overworld, a custom dimension, or a complete world preset.
+A desktop editor for procedural Minecraft terrain. Build a height graph, preview it as a shaded map or a
+rotatable 3D surface, export it as a heightmap PNG, or export a `.tsmc` integration package that Minecraft
+evaluates at runtime — for a replaced Overworld, a custom dimension, or a complete world preset.
+
+![CI](https://github.com/vipereditzyt1-tech/MC-TerrainStudio/actions/workflows/ci.yml/badge.svg)
+
+- **Graph editor** — 28 node types across six groups (Input, Generation, Combine, Shape, Distort, Output),
+  edited on a pannable canvas with a node library and an inspector.
+- **Live preview** — evaluated in a worker, debounced and cancellable, falling back to the last good
+  heightmap when generation fails or times out.
+- **Two views of the same field** — shaded relief with tinted water below sea level, plus a 3D surface you
+  can orbit and zoom.
+- **Real exports** — grayscale heightmap PNG (one pixel per sample) and a `.tsmc` package the MCreator
+  plugin compiles into a Minecraft density function.
+- **Same arithmetic everywhere** — preview, PNG and Minecraft export run identical maths, checked by a
+  TypeScript↔Java parity harness.
 
 ## Requirements
 
-- Node.js 18+ and npm.
-- Windows with MCreator installed for the plugin build path (the build script compiles against
-  MCreator's own bundled JDK). The editor itself is plain Electron and runs anywhere npm does.
+- Node.js 22.6 or newer for the test suite (it uses `node --test --experimental-strip-types`); Node 18+ is
+  enough to build and run the editor.
+- Windows to produce the packaged installers. The editor itself is plain Electron and runs anywhere npm does.
+- MCreator 2026.2 only if you want to build the MCreator plugin (it compiles against MCreator's own bundled
+  JDK).
 
-## Editor
+## Build and run
 
 ```bash
 npm install
-npm run dev      # Electron window with Vite hot reload
-npm run build    # type-check, bundle, then package the desktop app with electron-builder
-npm run lint
-npm run typecheck
-npm test         # node:test: .terrain parser + terrain-engine invariants
+npm run dev              # Electron window with Vite hot reload
+npm run build            # typecheck, bundle, package the desktop app
 ```
 
 `npm run build` writes two Windows artifacts into `release/<version>/`:
 `Terrain Studio-Windows-<version>-Setup.exe` (NSIS installer, per-user, changeable install directory) and
 `Terrain Studio-Windows-<version>-Portable.exe` (one file, no installation). The app loads its own
-`app.asar` bundle, so either artifact runs standalone without Node.js installed.
+`app.asar` bundle, so either artifact runs standalone without Node.js installed. The installers are
+unsigned, so Windows SmartScreen warns on a machine that has not seen them before.
 
-The node palette is split into six collapsible groups — **Input**, **Generation**, **Combine**, **Shape**, **Distort** and **Output** — with 28 node types. Ten noise models are available
-(`value`, `ridged`, `perlin`, `simplex`, `cellular`, `wave`, and the `minecraft-*` climate approximations);
-every model is mirrored exactly in the MCreator exporter. `Ctrl+Z` undoes, `Ctrl+X` redoes, and text
-fields keep their native undo. Projects are saved as `.terrain` JSON, and `Export PNG` writes a
-grayscale heightmap with one pixel per sample.
+## Scripts
 
-Previews are evaluated in a worker (`src/terrainWorker.ts`), debounced, cancellable, and fall back to
-the last good heightmap if generation fails or times out. The World View draws shaded relief with
-tinted water below sea level and can switch to a rotatable 3D surface of the same field; exported PNGs stay
-plain grayscale.
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server plus the Electron window |
+| `npm run build` | Typecheck, bundle renderer/main/preload, then run electron-builder |
+| `npm run build:renderer` | Typecheck and bundle only (no packaging) |
+| `npm run typecheck` | `tsc --noEmit` over `src` and `electron` |
+| `npm run lint` | ESLint over TypeScript and TSX |
+| `npm test` | `node:test` suites: project format, engine invariants, Minecraft export |
+| `npm run test:plugin` | Build the MCreator plugin, run the Java compiler/installer test, then TS↔Java parity |
+| `npm run preview` | Serve the last bundle with Vite |
 
-The project menu in the left sidebar holds the two documents: **Terrain Graph** (the graph editor) and
+## Editor
+
+The node palette is split into six collapsible groups with 28 node types. Ten noise models are available —
+`value`, `ridged`, `perlin`, `simplex`, `cellular`, `wave`, and the `minecraft-*` climate approximations —
+and every model is mirrored exactly in the MCreator exporter.
+
+| Action | Shortcut |
+| --- | --- |
+| Undo | `Ctrl+Z` (text fields keep their native undo) |
+| Redo | `Ctrl+X` |
+| Pan the graph | Drag empty canvas / scroll |
+| Orbit the 3D surface | Drag |
+| Zoom the preview | Scroll |
+
+Pitch in the World View runs from 8° (almost level with the terrain) to 88° (nearly straight down).
+Projects are saved as `.terrain` JSON. **Export PNG** writes a grayscale heightmap with one pixel per
+sample.
+
+The project menu in the left sidebar holds two documents: **Terrain Graph** (the graph editor) and
 **World Settings**, which owns the global build range, sea level and the dimension-type fields written for
 custom dimensions and world presets (logical height, coordinate scale, ambient light, skylight, bedrock
 ceiling). Custom textures are saved sub-graphs: a custom-texture noise node inlines the texture's graph into
@@ -46,62 +79,55 @@ its parent, so the preview, the PNG and the Minecraft export all run the same ar
 ## MCreator integration
 
 The reusable plugin lives in `mcreator-plugin/` and is documented in
-[`mcreator-plugin/README.md`](mcreator-plugin/README.md). Build it with:
+[`mcreator-plugin/README.md`](mcreator-plugin/README.md). Build it against your MCreator install:
 
 ```bash
 node mcreator-plugin/build.mjs --mcreator "<path to MCreator install>"
 ```
 
-That writes `mcreator-plugin/dist/terrain-studio.zip`. Install it through
-`%USERPROFILE%\.mcreator\plugins`, open a NeoForge workspace and use
-**Terrain Studio → Import Terrain Studio package…**. The plugin validates the package, shows its files,
-backs up anything it replaces, records SHA-256 hashes and refuses to overwrite files edited outside
-Terrain Studio. **Roll back last import** restores the previous state.
+That writes `mcreator-plugin/dist/terrain-studio.zip`. Copy it into `%USERPROFILE%\.mcreator\plugins`,
+restart MCreator, open a NeoForge workspace and use **Terrain Studio → Import Terrain Studio package…**.
+
+The plugin validates the package, lists the files it will create or replace, backs up anything it replaces,
+records SHA-256 hashes and refuses to overwrite files edited outside Terrain Studio. **Roll back last
+import** restores the previous state.
 
 Three modes share the same generated density function:
 
-- **Overworld replacement** — replaces `overworld`, `large_biomes` and `amplified` noise settings.
+- **Overworld replacement** — replaces the `overworld`, `large_biomes` and `amplified` noise settings.
 - **Custom dimension** — writes a dimension, dimension type and noise settings under your namespace.
-- **World preset** — writes the same dimension data plus a `world_preset` entry, keeping vanilla
-  Nether and End so the preset is a complete world.
+- **World preset** — writes the same dimension data plus a `world_preset` entry, keeping vanilla Nether
+  and End so the preset is a complete world.
 
 Every graph node is either compiled into the runtime or reported as unsupported; nothing is silently
-dropped. Legacy `.terrain` files still import as Overworld mode. Display names are package metadata;
+dropped. Legacy `.terrain` projects import as Overworld mode. Display names are package metadata;
 Minecraft's dimension name comes from its resource ID.
 
 ## Repository layout
 
 | Path | Purpose |
 | --- | --- |
-| `src/` | React editor, terrain engine, preview worker, project format |
-| `electron/` | Electron main process, preload bridge, file and PNG dialogs |
+| `src/` | React editor, terrain engine, preview worker, 3D surface renderer, project format |
+| `electron/` | Electron main process, preload bridge, file/PNG/package dialogs |
 | `mcreator-plugin/` | Reusable MCreator plugin: compiler, installer, Java template, tests |
-| `AGENT_SYNC.md` | Coordination notes and ownership for the agents working in this repo |
-| `POTENTIAL_UPGRADES.md`, `FIXES_AND_OPTIMIZATIONS.md` | Audit notes and backlog |
+| `tests/` | Dependency-free `node:test` suites for the engine, project format and export |
+| `build/`, `public/` | Packaging icon and renderer assets |
+| `.github/workflows/ci.yml` | Typecheck, lint, tests and bundle on every push and pull request |
 
 ## Verification
 
-- `npm run typecheck` and `npm run lint` must both be clean.
-- `npm run test:plugin` builds the plugin, runs the Java compiler/installer test and then the
-  TS↔Java parity harness in one go (add `-- --mcreator "<install>"` if MCreator is not in a default
-  location).
-- `npm test` runs the dependency-free `node:test` suites in `tests/` (format parsing, engine
-  validation/clamping/determinism, the extended node set, custom-texture inlining and export-package
-  validation; 44 tests). It needs Node 22.6+ for
-  native type stripping.
-- `node mcreator-plugin/tests/run-parity.mjs` compiles the TypeScript engine and the generated Java for
-  every noise type plus the extended node set and an inlined custom texture, comparing 25 height samples
-  per case (needs the local MCreator install and
-  `.freebuff` Minecraft caches).
-- `mcreator-plugin/tests/TerrainCompilerTest.java` covers compiler validation, all three integration
-  modes, install/update and conflict protection.
-- **Live NeoForge 26.1.2 server:** all three modes generate Terrain Studio terrain. Overworld replacement
-  reports `wired=true`; a custom dimension loads at its own height range and matches
-  `TerrainStudioWorldgen.height(x, z)` exactly at positive and negative coordinates; a world preset chosen
-  with `level-type` drives the real Overworld with vanilla Nether and End present. A fixed carver-free
-  biome gives grass-over-dirt-over-stone surfaces at the graph heights.
-- **Not verified live:** 1.21.1 dimensions/presets (compiled and parity-tested), world creation through
-  the MCreator GUI, and the plugin menu action itself (its compiler/installer path is tested). Vanilla
-  biome carvers can still cut a "no density caves" world.
-- `.freebuff/` holds disposable MCreator homes, NeoForge workspaces and server probe logs used for
-  integration testing. Nothing there is packaged or required to run the app.
+- `npm run typecheck` and `npm run lint` must both be clean; CI runs them with `npm test` and
+  `npm run build:renderer`.
+- `npm test` runs the `node:test` suites: format parsing, engine validation/clamping/determinism, the
+  extended node set, custom-texture inlining and export-package validation (44 tests).
+- `npm run test:plugin` builds the plugin, compiles and runs `TerrainCompilerTest` (all three integration
+  modes, install/update and conflict protection), then compares 25 height samples per noise type between
+  the TypeScript engine and the generated Java. Add `-- --mcreator "<install>"` when MCreator is not in a
+  default location.
+- **Live NeoForge 26.1.2 server checks:** all three modes generate Terrain Studio terrain. Overworld
+  replacement reports `wired=true`; a custom dimension loads at its own height range and matches
+  `TerrainStudioWorldgen.height(x, z)` at positive and negative coordinates; a world preset selected with
+  `level-type` drives the real Overworld with vanilla Nether and End present.
+- **Not verified live:** 1.21.1 dimensions and presets (compiled and parity-tested, but never generated on
+  a running server), world creation through the MCreator GUI, and the plugin's menu action itself (its
+  compiler and installer paths are tested). Vanilla biome carvers can still cut a "no density caves" world.
