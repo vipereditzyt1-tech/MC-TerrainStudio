@@ -95,9 +95,14 @@ installers embed at `build/mcreator-plugin/terrain-studio.zip`.
 
 The Windows installers carry that copy as a resource and the app installs it into
 `%USERPROFILE%\.mcreator\plugins` on launch (only when a `.mcreator` folder exists, and only when the
-copy differs), so a fresh install needs no manual step. For a development build, copy the zip there
-yourself, restart MCreator, open a NeoForge workspace and use **Terrain Studio → Import Terrain Studio
-package…**.
+copy differs), so a fresh install needs no manual step.
+
+From then on the two programs talk directly: **Send to MCreator** in the Minecraft panel hands the package
+to the plugin through `%USERPROFILE%\.terrainstudio\handoff`, and the open workspace asks for confirmation
+without any file dialog — a package sent while MCreator is closed is offered the next time a workspace
+opens. MCreator's own **Terrain Studio → Launch Terrain Studio** menu item starts the editor, and
+**Import Terrain Studio package…** remains for files you already have. For a development build, copy
+`mcreator-plugin/dist/terrain-studio.zip` into the plugins folder yourself and restart MCreator.
 
 The plugin validates the package, lists the files it will create or replace, backs up anything it replaces,
 records SHA-256 hashes and refuses to overwrite files edited outside Terrain Studio. **Roll back last

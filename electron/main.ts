@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { IPC } from './ipc'
 import { installMcreatorPlugin } from './mcreatorPlugin'
+import { queuePackageForMcreator } from './mcreatorHandoff'
 import os from 'node:os'
 import { open, writeFile, rename, unlink, mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -191,6 +192,13 @@ async function installBundledMcreatorPlugin() {
     console.warn(`MCreator plugin: could not install from ${bundledPluginZip}: ${String(error)}`)
   }
 }
+
+ipcMain.handle(IPC.minecraftHandOff, async (_event, text: unknown, name: string) => {
+  if (typeof text !== 'string' || Buffer.byteLength(text, 'utf8') > 20 * 1024 * 1024) {
+    throw new Error('Package must be text under 20 MB.')
+  }
+  return queuePackageForMcreator({ text, name, homeDirectory: os.homedir() })
+})
 
 function createWindow() {
   // A recreated window (macOS activate) starts clean until the renderer says otherwise.

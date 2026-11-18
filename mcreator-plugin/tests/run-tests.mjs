@@ -8,8 +8,8 @@
  * Usage: node mcreator-plugin/tests/run-tests.mjs [--mcreator "<MCreator install>"]
  */
 import { spawnSync } from 'node:child_process'
-import crypto from 'node:crypto'
 import fs from 'node:fs'
+import { sourceDigest } from '../sourceHash.mjs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -58,10 +58,11 @@ run(process.execPath, [path.join(root, 'mcreator-plugin', 'build.mjs'), '--mcrea
 // The installers embed a committed copy of this zip, because packaging happens on machines without
 // MCreator. A rebuilt plugin that was never copied forward would ship an old plugin in every
 // installer while every test above still passed against the new one.
-const shipped = path.join(root, 'build', 'mcreator-plugin', 'terrain-studio.zip')
-const digest = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
-if (!fs.existsSync(shipped)) fail('build/mcreator-plugin/terrain-studio.zip is missing — run npm run plugin:bundle')
-if (digest(shipped) !== digest(zip)) fail('build/mcreator-plugin/terrain-studio.zip is out of date — run npm run plugin:bundle')
+const shippedDirectory = path.join(root, 'build', 'mcreator-plugin')
+const shipped = path.join(shippedDirectory, 'terrain-studio.zip')
+const stamp = path.join(shippedDirectory, 'source.sha256')
+if (!fs.existsSync(shipped) || !fs.existsSync(stamp)) fail('build/mcreator-plugin is missing the shipped plugin — run npm run plugin:bundle')
+if (fs.readFileSync(stamp, 'utf8').trim() !== sourceDigest(root)) fail('the shipped plugin no longer matches the plugin sources — run npm run plugin:bundle')
 
 const classes = path.join(root, '.freebuff', 'plugin-build', 'test-run', 'classes')
 const workspace = path.join(root, '.freebuff', 'plugin-build', 'test-run', 'workspace')
@@ -69,9 +70,12 @@ fs.rmSync(path.dirname(classes), { recursive: true, force: true })
 fs.mkdirSync(classes, { recursive: true })
 fs.mkdirSync(workspace, { recursive: true })
 
-const tests = ['TerrainCompilerTest.java', 'NoiseParityTool.java'].map((file) => path.join(root, 'mcreator-plugin', 'tests', file))
+const tests = ['TerrainCompilerTest.java', 'NoiseParityTool.java', 'HandoffWatcherTest.java', 'TerrainStudioLauncherTest.java']
+  .map((file) => path.join(root, 'mcreator-plugin', 'tests', file))
 run(executable('javac'), ['-encoding', 'UTF-8', '-classpath', classpath, '-d', classes, ...tests])
 run(executable('java'), ['-classpath', [classes, classpath].join(path.delimiter), 'TerrainCompilerTest', workspace])
+run(executable('java'), ['-classpath', [classes, classpath].join(path.delimiter), 'HandoffWatcherTest'])
+run(executable('java'), ['-classpath', [classes, classpath].join(path.delimiter), 'TerrainStudioLauncherTest'])
 run(process.execPath, [path.join(root, 'mcreator-plugin', 'tests', 'run-parity.mjs')])
 
 console.log('\ntest:plugin — all checks passed')

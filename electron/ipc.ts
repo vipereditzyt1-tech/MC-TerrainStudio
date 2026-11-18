@@ -14,7 +14,10 @@ export const IPC = {
     recoveryClear: 'recovery:clear',
     terrainExportPng: 'terrain:export-png',
     minecraftExportPackage: 'minecraft:export-package',
+    minecraftHandOff: 'minecraft:hand-off',
 } as const
+
+import type { HandoffResult } from './mcreatorHandoff'
 
 export type OpenedProject = { path: string; text: string }
 
@@ -26,6 +29,8 @@ export type TerrainStudioBridge = {
     newProject: () => Promise<void>
     exportPng: (bytes: Uint8Array, name: string) => Promise<boolean>
     exportPackage: (text: string, name: string) => Promise<boolean>
+    /** Absent in plain-browser builds: hands the package to the MCreator plugin's hand-off folder. */
+    handOff?: (text: string, name: string) => Promise<HandoffResult>
     /** Absent in plain-browser builds: Electron reports the dirty flag to the main process. */
     setDirty?: (dirty: boolean) => void
     /** Absent in plain-browser builds: unattended crash-recovery snapshots. */

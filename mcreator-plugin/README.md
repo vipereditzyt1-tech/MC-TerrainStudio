@@ -38,6 +38,17 @@ it will create or replace, backs up replaced files, and refuses to overwrite fil
 were edited outside Terrain Studio. **Validate package…** checks compatibility without writing, and
 **Roll back last import** restores the previous state and clears the manifest.
 
+## Sending from Terrain Studio
+
+**Send to MCreator** in the app's Minecraft panel writes the package into
+`%USERPROFILE%\.terrainstudio\handoff`, and the plugin watches that folder: a running MCreator gets the
+confirmation dialog immediately, and a package sent while MCreator was closed is offered the next time a
+workspace opens. Delivered packages move to `handoff/archive/`, so nothing is imported twice. Files are
+written beside their final name and renamed into place, which is why a half-written package is never read.
+
+**Terrain Studio → Launch Terrain Studio** starts the editor, searching `%LOCALAPPDATA%\Programs`, then
+Program Files, and honouring `TERRAIN_STUDIO_EXE` for development builds or unusual install locations.
+
 ## What the import writes
 
 | Path | Purpose |

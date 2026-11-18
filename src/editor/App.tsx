@@ -723,10 +723,12 @@ type MinecraftPanelProps = {
     message: string;
     exporting: boolean;
     onExport: () => void;
+    sending: boolean;
+    onSend: () => void;
     world: WorldSettings;
 };
 
-function MinecraftPanel({ config, onChange, validation, message, exporting, onExport, world }: MinecraftPanelProps) {
+function MinecraftPanel({ config, onChange, validation, message, exporting, onExport, sending, onSend, world }: MinecraftPanelProps) {
     const errors = validation.issues.filter((issue) => issue.severity === "error");
     const unsupported = validation.compatibility.filter((node) => node.status === "unsupported");
     const runtime = validation.compatibility.length - unsupported.length;
@@ -853,13 +855,18 @@ function MinecraftPanel({ config, onChange, validation, message, exporting, onEx
                         ))}
                     </ul>
                     {message && <p className="mc-status" role="status">{message}</p>}
+                    <button className="export-button" onClick={onSend} disabled={sending || exporting || errors.length > 0} title="Hand the package to MCreator without a file dialog">
+                        <Icon name="export" />
+                        <span>{sending ? "Sending…" : "Send to MCreator"}</span>
+                    </button>
                     <button className="export-button" onClick={onExport} disabled={exporting || errors.length > 0} title="Write a .tsmc integration package for the MCreator plugin">
                         <Icon name="export" />
                         <span>{exporting ? "Exporting…" : "Export integration package"}</span>
                     </button>
                     <p className="mc-note">
-                        Export writes a .tsmc package. In MCreator, use <strong>Terrain Studio → Import Terrain Studio package…</strong>. The plugin
-                        validates the workspace, backs up files it replaces, records SHA-256 hashes and refuses to overwrite files edited outside Terrain Studio.
+                        Send hands the package to the open MCreator window, which asks for confirmation before writing. Export writes a .tsmc file
+                        instead; import it with <strong>Terrain Studio → Import Terrain Studio package…</strong>. Either way the plugin validates the
+                        workspace, backs up files it replaces, records SHA-256 hashes and refuses to overwrite files edited outside Terrain Studio.
                     </p>
                 </div>
             </div>
@@ -915,6 +922,7 @@ function App() {
     const [minecraftConfig, setMinecraftConfig] = useState<MinecraftConfig>(DEFAULT_MINECRAFT_CONFIG);
     const [minecraftMessage, setMinecraftMessage] = useState("");
     const [minecraftExporting, setMinecraftExporting] = useState(false);
+    const [minecraftSending, setMinecraftSending] = useState(false);
 
     const [selectedNode, setSelectedNode] =
         useState<TerrainNode | null>(initialNodes[0]);
@@ -1324,6 +1332,32 @@ function App() {
             setMinecraftExporting(false);
         }
     }, [minecraftConfig, minecraftExporting, minecraftGraph, maxY, minY, projectName, seaLevel, textureGraphs]);
+
+    const sendMinecraftPackage = useCallback(async () => {
+        const bridge = window.terrainProjects;
+        if (minecraftSending || minecraftExporting) return;
+        if (!bridge?.handOff) {
+            setMinecraftMessage("Sending needs the desktop app. Export the package and import it in MCreator instead.");
+            return;
+        }
+        setMinecraftSending(true);
+        setMinecraftMessage("Handing the package to MCreator…");
+        try {
+            const pkg = buildIntegrationPackage(projectName, minecraftGraph, { minY, maxY, seaLevel }, minecraftConfig, textureGraphs);
+            const result = await bridge.handOff(serializeIntegrationPackage(pkg), projectName);
+            setMinecraftMessage(
+                result.status === "queued"
+                    ? "Package handed over. Confirm it in the open MCreator window; if MCreator was closed, it is offered next time a workspace opens."
+                    : result.status === "plugin-missing"
+                        ? "MCreator has no Terrain Studio plugin yet. Open Terrain Studio once from the download, then reopen MCreator."
+                        : "No MCreator installation was found on this computer."
+            );
+        } catch (error) {
+            setMinecraftMessage(`Send blocked: ${error instanceof Error ? error.message : "Unknown error"}`);
+        } finally {
+            setMinecraftSending(false);
+        }
+    }, [minecraftConfig, minecraftExporting, minecraftGraph, minecraftSending, maxY, minY, projectName, seaLevel, textureGraphs]);
 
     const handleNodesChange = useCallback(
         (changes: NodeChangeset<TerrainNode>) => {
@@ -2161,6 +2195,8 @@ function App() {
                                 message={minecraftMessage}
                                 exporting={minecraftExporting}
                                 onExport={() => void exportMinecraftPackage()}
+                                sending={minecraftSending}
+                                onSend={() => void sendMinecraftPackage()}
                                 world={{ minY, maxY, seaLevel }}
                             />
                         ) : (

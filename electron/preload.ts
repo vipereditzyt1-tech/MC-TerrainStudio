@@ -8,6 +8,7 @@ const bridge: TerrainStudioBridge = {
   newProject: () => ipcRenderer.invoke(IPC.projectNew),
   exportPng: (bytes: Uint8Array, name: string) => ipcRenderer.invoke(IPC.terrainExportPng, bytes, name),
   exportPackage: (text: string, name: string) => ipcRenderer.invoke(IPC.minecraftExportPackage, text, name),
+  handOff: (text: string, name: string) => ipcRenderer.invoke(IPC.minecraftHandOff, text, name),
   setDirty: (dirty: boolean): void => ipcRenderer.send(IPC.projectDirty, dirty),
   recovery: {
     write: (text: string): Promise<void> => ipcRenderer.invoke(IPC.recoveryWrite, text),

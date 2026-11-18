@@ -7,14 +7,34 @@ import net.mcreator.ui.MCreator;
 import net.mcreator.workspace.Workspace;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TerrainStudioPlugin extends JavaPlugin {
+    private static final AtomicBoolean HANDOFF_STARTED = new AtomicBoolean();
+    /** The window a package pushed from Terrain Studio is imported into; the newest window wins. */
+    private static volatile MCreator activeWindow;
+
     public TerrainStudioPlugin(Plugin plugin) {
         super(plugin);
+        startHandoff();
         addListener(MCreatorLoadedEvent.class, event -> SwingUtilities.invokeLater(() -> addMenu(event.getMCreator())));
+    }
+
+    /**
+     * Picks up packages Terrain Studio queues in its hand-off folder. Started once per JVM: MCreator
+     * creates a plugin instance per window, and two watchers would offer every import twice.
+     */
+    private static void startHandoff() {
+        if (!HANDOFF_STARTED.compareAndSet(false, true)) return;
+        HandoffWatcher.start(HandoffWatcher.directory(), packageFile -> SwingUtilities.invokeLater(() -> {
+            MCreator target = activeWindow;
+            if (target == null) return;
+            importFrom(target, packageFile);
+        }));
     }
 
     private static void addMenu(MCreator mcreator) {
@@ -22,6 +42,7 @@ public class TerrainStudioPlugin extends JavaPlugin {
         for (int index = 0; index < mcreator.getMainMenuBar().getMenuCount(); index++) {
             if ("Terrain Studio".equals(mcreator.getMainMenuBar().getMenu(index).getText())) return;
         }
+        activeWindow = mcreator;
         JMenu menu = new JMenu("Terrain Studio");
         menu.setName("terrain-studio-menu");
 
@@ -38,6 +59,13 @@ public class TerrainStudioPlugin extends JavaPlugin {
         JMenuItem rollbackItem = new JMenuItem("Roll back last Terrain Studio import");
         rollbackItem.addActionListener(event -> rollback(mcreator));
         menu.add(rollbackItem);
+
+        menu.addSeparator();
+
+        JMenuItem launchItem = new JMenuItem("Launch Terrain Studio");
+        launchItem.setToolTipText("Start the Terrain Studio editor, which can push packages straight into this workspace.");
+        launchItem.addActionListener(event -> launchTerrainStudio(mcreator));
+        menu.add(launchItem);
 
         mcreator.getMainMenuBar().add(menu);
         mcreator.getMainMenuBar().revalidate();
@@ -80,13 +108,17 @@ public class TerrainStudioPlugin extends JavaPlugin {
     }
 
     private static void importTerrain(MCreator mcreator) {
+        String chosen = chooseFile(mcreator, "Import Terrain Studio package");
+        if (chosen == null) return;
+        importFrom(mcreator, Path.of(chosen));
+    }
+
+    /** Validates, confirms and installs one package; shared by the file chooser and the hand-off folder. */
+    private static void importFrom(MCreator mcreator, Path file) {
         Workspace workspace = mcreator.getWorkspace();
         String generator = workspaceGenerator(mcreator, workspace);
         if (generator == null) return;
-        String chosen = chooseFile(mcreator, "Import Terrain Studio package");
-        if (chosen == null) return;
         try {
-            Path file = Path.of(chosen);
             if (!Files.isRegularFile(file) || Files.size(file) > 20 * 1024 * 1024)
                 throw new IllegalArgumentException("Package must be a file smaller than 20 MB.");
             String text = Files.readString(file, StandardCharsets.UTF_8);
@@ -158,6 +190,22 @@ public class TerrainStudioPlugin extends JavaPlugin {
                     "Terrain Studio", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception error) {
             JOptionPane.showMessageDialog(mcreator, "Rollback failed.\n" + error.getMessage(),
+                    "Terrain Studio", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static void launchTerrainStudio(MCreator mcreator) {
+        Path executable = TerrainStudioLauncher.locate(System.getenv());
+        if (executable == null) {
+            JOptionPane.showMessageDialog(mcreator,
+                    "Terrain Studio was not found. Install it with the Windows installer, or point TERRAIN_STUDIO_EXE at its executable.",
+                    "Terrain Studio", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        try {
+            TerrainStudioLauncher.launch(executable);
+        } catch (IOException error) {
+            JOptionPane.showMessageDialog(mcreator, "Could not start " + executable + "\n" + error.getMessage(),
                     "Terrain Studio", JOptionPane.ERROR_MESSAGE);
         }
     }

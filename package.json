@@ -36,7 +36,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test:plugin": "node mcreator-plugin/tests/run-tests.mjs",
     "plugin:bundle": "node mcreator-plugin/bundle.mjs",
-    "test": "node --test --experimental-strip-types tests/project.test.ts tests/engine.test.ts tests/minecraftExport.test.ts tests/mcreatorPlugin.test.ts",
+    "test": "node --test --experimental-strip-types tests/project.test.ts tests/engine.test.ts tests/minecraftExport.test.ts tests/mcreatorPlugin.test.ts tests/mcreatorHandoff.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

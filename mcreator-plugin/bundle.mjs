@@ -12,6 +12,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { sourceDigest } from './sourceHash.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
@@ -38,4 +39,6 @@ if (build.status !== 0) {
 
 fs.mkdirSync(shippedDirectory, { recursive: true })
 fs.copyFileSync(built, shipped)
+// Recorded so the test suite can tell whether this copy still matches the plugin sources.
+fs.writeFileSync(path.join(shippedDirectory, 'source.sha256'), `${sourceDigest(root)}\n`)
 console.log(`bundle: installers will ship ${path.relative(root, shipped)} (${(fs.statSync(shipped).size / 1024).toFixed(0)} KiB)`)
