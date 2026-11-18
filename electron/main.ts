@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { IPC } from './ipc'
 import { open, writeFile, rename, unlink, mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -37,7 +38,7 @@ const projectFilter = [{ name: 'Terrain Studio project', extensions: ['terrain']
 const illegalFileNameCharacters = /[<>:"/\\|?*\x00-\x1f]/g
 const safeFileName = (name: string, fallback: string) => name.replace(illegalFileNameCharacters, '_') || fallback
 
-ipcMain.handle('project:open', async (event) => {
+ipcMain.handle(IPC.projectOpen, async (event) => {
   const owner = BrowserWindow.fromWebContents(event.sender)
   if (!owner) throw new Error('Project window is unavailable.')
   pendingProjectPath = null
@@ -57,13 +58,13 @@ ipcMain.handle('project:open', async (event) => {
   return { path: filePath, text }
 })
 
-ipcMain.handle('project:accept-open', (_event, filePath: string) => {
+ipcMain.handle(IPC.projectAcceptOpen, (_event, filePath: string) => {
   if (filePath !== pendingProjectPath) throw new Error('The selected project has changed.')
   currentProjectPath = filePath
   pendingProjectPath = null
 })
 
-ipcMain.handle('project:save', async (event, text: string, saveAs: boolean, name: string) => {
+ipcMain.handle(IPC.projectSave, async (event, text: string, saveAs: boolean, name: string) => {
   const owner = BrowserWindow.fromWebContents(event.sender)
   if (!owner) throw new Error('Project window is unavailable.')
   if (typeof text !== 'string' || Buffer.byteLength(text, 'utf8') > 20 * 1024 * 1024) throw new Error('Project exceeds the 20 MB limit.')
@@ -85,16 +86,16 @@ ipcMain.handle('project:save', async (event, text: string, saveAs: boolean, name
   return filePath
 })
 
-ipcMain.handle('project:new', () => { currentProjectPath = null; pendingProjectPath = null })
+ipcMain.handle(IPC.projectNew, () => { currentProjectPath = null; pendingProjectPath = null })
 
 // The renderer owns the notion of "unsaved"; the main process only needs the flag so it can
 // ask before a window close throws that work away.
-ipcMain.on('project:dirty', (_event, dirty: unknown) => { projectDirty = dirty === true })
+ipcMain.on(IPC.projectDirty, (_event, dirty: unknown) => { projectDirty = dirty === true })
 
 // Crash recovery lives in userData, never beside the project and never inside the .terrain payload.
 const recoveryFile = () => path.join(app.getPath('userData'), 'recovery', 'session.terrain')
 
-ipcMain.handle('recovery:read', async () => {
+ipcMain.handle(IPC.recoveryRead, async () => {
   try {
     const handle = await open(recoveryFile(), 'r')
     try {
@@ -105,7 +106,7 @@ ipcMain.handle('recovery:read', async () => {
   } catch { return null }
 })
 
-ipcMain.handle('recovery:write', async (_event, text: unknown) => {
+ipcMain.handle(IPC.recoveryWrite, async (_event, text: unknown) => {
   if (typeof text !== 'string' || Buffer.byteLength(text, 'utf8') > 20 * 1024 * 1024) throw new Error('Recovery snapshot exceeds the 20 MB limit.')
   const target = recoveryFile()
   await mkdir(path.dirname(target), { recursive: true })
@@ -119,9 +120,9 @@ ipcMain.handle('recovery:write', async (_event, text: unknown) => {
   }
 })
 
-ipcMain.handle('recovery:clear', async () => { await unlink(recoveryFile()).catch(() => {}) })
+ipcMain.handle(IPC.recoveryClear, async () => { await unlink(recoveryFile()).catch(() => {}) })
 
-ipcMain.handle('terrain:export-png', async (event, bytes: Uint8Array, name: string) => {
+ipcMain.handle(IPC.terrainExportPng, async (event, bytes: Uint8Array, name: string) => {
   const owner = BrowserWindow.fromWebContents(event.sender)
   if (!owner) throw new Error('Project window is unavailable.')
   if (!(bytes instanceof Uint8Array) || bytes.byteLength > 20 * 1024 * 1024) throw new Error('Invalid heightmap data.')
@@ -139,7 +140,7 @@ ipcMain.handle('terrain:export-png', async (event, bytes: Uint8Array, name: stri
 })
 
 // The renderer owns graph semantics; the main process only writes the package it is given.
-ipcMain.handle('minecraft:export-package', async (event, text: unknown, name: string) => {
+ipcMain.handle(IPC.minecraftExportPackage, async (event, text: unknown, name: string) => {
   const owner = BrowserWindow.fromWebContents(event.sender)
   if (!owner) throw new Error('Project window is unavailable.')
   if (typeof text !== 'string' || Buffer.byteLength(text, 'utf8') > 20 * 1024 * 1024) throw new Error('Integration package exceeds the 20 MB limit.')

@@ -1,17 +1,19 @@
-import { ipcRenderer, contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
+import { IPC, type TerrainStudioBridge } from './ipc'
 
-contextBridge.exposeInMainWorld('terrainProjects', {
-  open: (): Promise<{ path: string; text: string } | null> => ipcRenderer.invoke('project:open'),
-  acceptOpen: (path: string): Promise<void> => ipcRenderer.invoke('project:accept-open', path),
-  save: (text: string, saveAs: boolean, name: string): Promise<string | null> => ipcRenderer.invoke('project:save', text, saveAs, name),
-  newProject: (): Promise<void> => ipcRenderer.invoke('project:new'),
-  exportPng: (bytes: Uint8Array, name: string): Promise<boolean> => ipcRenderer.invoke('terrain:export-png', bytes, name),
-  exportPackage: (text: string, name: string): Promise<boolean> => ipcRenderer.invoke('minecraft:export-package', text, name),
-  setDirty: (dirty: boolean): void => ipcRenderer.send('project:dirty', dirty),
+const bridge: TerrainStudioBridge = {
+  open: () => ipcRenderer.invoke(IPC.projectOpen),
+  acceptOpen: (path: string) => ipcRenderer.invoke(IPC.projectAcceptOpen, path),
+  save: (text: string, saveAs: boolean, name: string) => ipcRenderer.invoke(IPC.projectSave, text, saveAs, name),
+  newProject: () => ipcRenderer.invoke(IPC.projectNew),
+  exportPng: (bytes: Uint8Array, name: string) => ipcRenderer.invoke(IPC.terrainExportPng, bytes, name),
+  exportPackage: (text: string, name: string) => ipcRenderer.invoke(IPC.minecraftExportPackage, text, name),
+  setDirty: (dirty: boolean): void => ipcRenderer.send(IPC.projectDirty, dirty),
   recovery: {
-    write: (text: string): Promise<void> => ipcRenderer.invoke('recovery:write', text),
-    read: (): Promise<string | null> => ipcRenderer.invoke('recovery:read'),
-    clear: (): Promise<void> => ipcRenderer.invoke('recovery:clear'),
+    write: (text: string): Promise<void> => ipcRenderer.invoke(IPC.recoveryWrite, text),
+    read: (): Promise<string | null> => ipcRenderer.invoke(IPC.recoveryRead),
+    clear: (): Promise<void> => ipcRenderer.invoke(IPC.recoveryClear),
   },
-})
+}
 
+contextBridge.exposeInMainWorld('terrainProjects', bridge)

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { parseProject, projectGraph } from '../src/project.ts'
+import { parseProject, projectGraph } from '../src/project/project.ts'
 
 const coordinatesNode = {
   id: 'coordinates',

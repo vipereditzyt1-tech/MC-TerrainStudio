@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { compileGraph, evaluateHeightField, flattenCustomTextures, type CustomTextureGraph, type TerrainGraph } from '../src/terrainEngine.ts'
+import { compileGraph, evaluateHeightField, flattenCustomTextures, type CustomTextureGraph, type TerrainGraph } from '../src/engine/terrainEngine.ts'
 
 const world = { minY: -64, maxY: 319, seaLevel: 63 }
 

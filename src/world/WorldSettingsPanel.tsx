@@ -1,6 +1,6 @@
-import type { IntegrationMode, ValidationIssue } from './minecraftExport';
-import type { WorldSettings } from './terrainEngine';
-import { worldPresets, type WorldPreset } from './worldPresets';
+import type { IntegrationMode, ValidationIssue } from '../minecraft/minecraftExport';
+import type { WorldSettings } from '../engine/terrainEngine';
+import { worldPresets, type WorldPreset } from '../minecraft/worldPresets';
 
 type WorldSettingsPanelProps = {
     world: WorldSettings;

@@ -27,9 +27,9 @@ import {
 
 import "@xyflow/react/dist/style.css";
 import "./App.css";
-import { compileGraph } from "./terrainEngine";
-import type { CustomTextureGraph, TerrainKind, WorldSettings } from "./terrainEngine";
-import { parseProject, projectGraph, toTerrainGraph, type ProjectDocument } from "./project";
+import { compileGraph } from "../engine/terrainEngine.ts";
+import type { CustomTextureGraph, TerrainKind, WorldSettings } from "../engine/terrainEngine.ts";
+import { parseProject, projectGraph, toTerrainGraph, type ProjectDocument } from "../project/project.ts";
 import {
     describeParameters,
     libraryGroups,
@@ -38,10 +38,11 @@ import {
     noiseTypeLabel,
     type LibraryNode,
     type NoiseType,
-} from "./nodeCatalog";
-import WorldView from "./WorldView";
-import WorldSettingsPanel from "./WorldSettingsPanel";
-import { worldPresets, type WorldPreset } from "./worldPresets";
+} from "./nodeCatalog.ts";
+import { parameterFields } from "./nodeFields.ts";
+import WorldView from "../world/WorldView.tsx";
+import WorldSettingsPanel from "../world/WorldSettingsPanel.tsx";
+import { worldPresets, type WorldPreset } from "../minecraft/worldPresets.ts";
 import {
     DEFAULT_MINECRAFT_CONFIG,
     buildIntegrationPackage,
@@ -49,7 +50,7 @@ import {
     targetProfiles,
     validateMinecraftExport,
     type MinecraftConfig,
-} from "./minecraftExport";
+} from "../minecraft/minecraftExport.ts";
 
 type TerrainNodeData = {
     title: string;
@@ -629,39 +630,6 @@ function applyEdgePatch(changes: EdgeChangeset<Edge>, current: Edge[]): Edge[] {
     }
     return next;
 }
-
-// Parameter editors for the node kinds that did not exist when the inspector was written; the older
-// sections keep their layout, these kinds share one data-driven grid.
-const parameterFields: Partial<Record<TerrainKind, Array<{ field: string; label: string; step: number; fallback: number; min?: number; max?: number }>>> = {
-    power: [{ field: "exponent", label: "Exponent", step: 0.1, fallback: 2, min: 0.01 }],
-    smoothstep: [
-        { field: "inMin", label: "Edge 0", step: 0.05, fallback: 0 },
-        { field: "inMax", label: "Edge 1", step: 0.05, fallback: 1 },
-    ],
-    threshold: [
-        { field: "threshold", label: "Level", step: 0.05, fallback: 0.5 },
-        { field: "strength", label: "Soft width", step: 0.01, fallback: 0.02, min: 0 },
-    ],
-    offset: [
-        { field: "factor", label: "Multiplier", step: 0.1, fallback: 1 },
-        { field: "bias", label: "Bias", step: 0.05, fallback: 0 },
-    ],
-    contrast: [{ field: "contrast", label: "Contrast", step: 0.1, fallback: 1.5 }],
-    quantize: [{ field: "steps", label: "Levels", step: 1, fallback: 8, min: 1, max: 1024 }],
-    sine: [
-        { field: "scale", label: "Frequency", step: 0.1, fallback: 2, min: 0 },
-        { field: "seed", label: "Phase seed", step: 1, fallback: 0 },
-    ],
-    triangle: [
-        { field: "scale", label: "Frequency", step: 0.1, fallback: 2, min: 0 },
-        { field: "seed", label: "Phase seed", step: 1, fallback: 0 },
-    ],
-    radial: [{ field: "scale", label: "Scale", step: 0.005, fallback: 0.01, min: 0.0001 }],
-    swirl: [
-        { field: "strength", label: "Degrees", step: 15, fallback: 180 },
-        { field: "scale", label: "Scale", step: 0.005, fallback: 0.01, min: 0.0001 },
-    ],
-};
 
 function cloneGraph(nodes: TerrainNode[], edges: Edge[], worldSettings: WorldSettings, customTextures: CustomTexture[]): GraphSnapshot {
     return {
@@ -1267,7 +1235,7 @@ function App() {
         setProjectMessage("Generating heightmap…");
         // A stale worker from an interrupted run must not outlive its replacement.
         exportWorkerRef.current?.terminate();
-        const worker = new Worker(new URL("./terrainWorker.ts", import.meta.url), { type: "module" });
+        const worker = new Worker(new URL("../engine/terrainWorker.ts", import.meta.url), { type: "module" });
         exportWorkerRef.current = worker;
         let settled = false;
         // A worker that never answers must not leave the Export button disabled forever.

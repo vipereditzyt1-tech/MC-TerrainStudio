@@ -1,4 +1,4 @@
-import type { TerrainKind } from './terrainEngine';
+import type { TerrainKind } from '../engine/terrainEngine.ts';
 
 export type NoiseType =
     | 'perlin'

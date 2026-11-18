@@ -1,6 +1,6 @@
 import type { Edge, Node } from '@xyflow/react';
-import type { EngineNode, TerrainGraph, TerrainKind, WorldSettings } from './terrainEngine';
-import type { MinecraftConfig } from './minecraftExport';
+import type { EngineNode, TerrainGraph, TerrainKind, WorldSettings } from '../engine/terrainEngine.ts';
+import type { MinecraftConfig } from '../minecraft/minecraftExport';
 
 export type ProjectNodeData = {
     title: string; category: string; description: string; value: string; accent: string;

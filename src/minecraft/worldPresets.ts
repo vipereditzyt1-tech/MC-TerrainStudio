@@ -1,4 +1,4 @@
-import type { WorldSettings } from './terrainEngine';
+import type { WorldSettings } from '../engine/terrainEngine';
 
 export type WorldPreset = 'overworld' | 'amplified' | 'compact';
 

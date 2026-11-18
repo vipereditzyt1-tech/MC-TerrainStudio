@@ -31,14 +31,25 @@
         "arch": [
           "x64"
         ]
+      },
+      {
+        // A Windows Installer package for people who deploy with group policy or Intune.
+        "target": "msi",
+        "arch": [
+          "x64"
+        ]
       }
     ],
     "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
+  },
+  "msi": {
+    "artifactName": "${productName}-Windows-${version}.${ext}"
   },
   "portable": {
     "artifactName": "${productName}-Windows-${version}-Portable.${ext}"
   },
   "nsis": {
+    "artifactName": "${productName}-Windows-${version}-Setup.${ext}",
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,

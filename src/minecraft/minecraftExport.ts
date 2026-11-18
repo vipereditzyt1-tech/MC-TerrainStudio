@@ -1,4 +1,4 @@
-import { compileGraph, flattenCustomTextures, type CustomTextureGraph, type EngineNode, type TerrainGraph, type WorldSettings } from './terrainEngine.ts';
+import { compileGraph, flattenCustomTextures, type CustomTextureGraph, type EngineNode, type TerrainGraph, type WorldSettings } from '../engine/terrainEngine.ts';
 
 export type MinecraftTarget = 'neoforge-1.21.1' | 'neoforge-26.1.2';
 export type IntegrationMode = 'overworld' | 'dimension' | 'preset';

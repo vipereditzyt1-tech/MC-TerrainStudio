@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-installers:
+    name: windows installers
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      # electron-builder writes nsis, portable and msi into release/<version>/.
+      - name: Package
+        run: npm run build
+
+      - name: Checksums
+        shell: bash
+        run: |
+          cd "release/$(ls release | head -n 1)"
+          sha256sum *.exe *.msi > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: terrain-studio-windows
+          path: |
+            release/**/*.exe
+            release/**/*.msi
+            release/**/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "release/$(ls release | head -n 1)"
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "Terrain Studio $GITHUB_REF_NAME" *.exe *.msi SHA256SUMS.txt

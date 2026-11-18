@@ -33,11 +33,16 @@ npm run dev              # Electron window with Vite hot reload
 npm run build            # typecheck, bundle, package the desktop app
 ```
 
-`npm run build` writes two Windows artifacts into `release/<version>/`:
-`Terrain Studio-Windows-<version>-Setup.exe` (NSIS installer, per-user, changeable install directory) and
-`Terrain Studio-Windows-<version>-Portable.exe` (one file, no installation). The app loads its own
-`app.asar` bundle, so either artifact runs standalone without Node.js installed. The installers are
-unsigned, so Windows SmartScreen warns on a machine that has not seen them before.
+`npm run build` writes three Windows artifacts into `release/<version>/`:
+
+| Artifact | Use it when |
+| --- | --- |
+| `Terrain Studio-Windows-<version>-Setup.exe` | Normal install. NSIS, per-user, changeable install directory, Start-menu entry. |
+| `Terrain Studio-Windows-<version>.msi` | Managed deployment (Intune, group policy, `msiexec /i`), and anything that expects a Windows Installer package. |
+| `Terrain Studio-Windows-<version>-Portable.exe` | One file, no installation — a USB stick or a locked-down machine. |
+
+The app loads its own `app.asar` bundle, so every artifact runs standalone without Node.js installed.
+They are unsigned, so Windows SmartScreen warns on a machine that has not seen them before.
 
 ## Scripts
 
@@ -107,12 +112,33 @@ Minecraft's dimension name comes from its resource ID.
 
 | Path | Purpose |
 | --- | --- |
-| `src/` | React editor, terrain engine, preview worker, 3D surface renderer, project format |
-| `electron/` | Electron main process, preload bridge, file/PNG/package dialogs |
+| `src/editor/` | React app: `App.tsx`, palette (`nodeCatalog.ts`), inspector parameter table (`nodeFields.ts`), styles |
+| `src/engine/` | Terrain engine and the preview worker — the single source of terrain semantics |
+| `src/project/` | `.terrain` document format, graph conversion and validation |
+| `src/minecraft/` | `.tsmc` export compiler, MCreator validation, world presets |
+| `src/world/` | World View, 3D surface renderer, World Settings panel |
+| `electron/` | Main process, `ipc.ts` contract, preload bridge |
 | `mcreator-plugin/` | Reusable MCreator plugin: compiler, installer, Java template, tests |
 | `tests/` | Dependency-free `node:test` suites for the engine, project format and export |
 | `build/`, `public/` | Packaging icon and renderer assets |
 | `.github/workflows/ci.yml` | Typecheck, lint, tests and bundle on every push and pull request |
+| `.github/workflows/release.yml` | Tagged builds: all three Windows installers plus `SHA256SUMS.txt`, attached to the release |
+
+## Extending it
+
+The pieces you are most likely to touch are each in one place:
+
+- **A new node kind** — add a palette entry in `src/editor/nodeCatalog.ts` (title, group, defaults), the
+  arithmetic in `src/engine/terrainEngine.ts`, and either an inspector section in
+  `src/editor/App.tsx` or one row in the `parameterFields` table in `src/editor/nodeFields.ts`. The
+  MCreator compiler reports anything it cannot compile as unsupported rather than dropping it.
+- **A new desktop capability** — add the channel name and the method signature to `electron/ipc.ts`, the
+  handler in `electron/main.ts`, and the forwarding call in `electron/preload.ts`. The renderer's
+  `window.terrainProjects` type comes from that same contract, so a mismatch is a compile error.
+- **A new world setting** — `WorldSettings` in `src/engine/terrainEngine.ts` plus the panel in
+  `src/world/WorldSettingsPanel.tsx`; the project format validates it in `src/project/project.ts`.
+- **A release** — push a `v*` tag. The release workflow runs the same gates as CI, builds all three
+  installers and publishes them with checksums.
 
 ## Verification
 

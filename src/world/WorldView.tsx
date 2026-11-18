@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Edge } from '@xyflow/react';
-import { toTerrainGraph, type ProjectNode } from './project';
-import type { CustomTextureGraph, HeightField, WorldSettings } from './terrainEngine';
-import { drawSurface3D } from './worldView3d';
+import { toTerrainGraph, type ProjectNode } from '../project/project';
+import type { CustomTextureGraph, HeightField, WorldSettings } from '../engine/terrainEngine';
+import { drawSurface3D } from './worldView3d.ts';
 
 const PREVIEW_DEBOUNCE_MS = 160;
 const PREVIEW_TIMEOUT_MS = 20000;
@@ -160,7 +160,7 @@ export default function WorldView({ nodes, edges, world, resolution, extent, set
         const start = () => {
             if (cancelled) return;
             setStatus(generatedRef.current ? 'Regenerating…' : 'Generating…');
-            worker = new Worker(new URL('./terrainWorker.ts', import.meta.url), { type: 'module' });
+            worker = new Worker(new URL('../engine/terrainWorker.ts', import.meta.url), { type: 'module' });
             watchdog = setTimeout(() => {
                 if (cancelled) return;
                 release();

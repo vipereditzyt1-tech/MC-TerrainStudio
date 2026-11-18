@@ -1,4 +1,4 @@
-import type { HeightField } from './terrainEngine';
+import type { HeightField } from '../engine/terrainEngine';
 
 export type SurfaceCamera = { yaw: number; pitch: number; zoom: number; exaggeration: number; water: boolean; seaLevel: number };
 

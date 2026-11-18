@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import type { TerrainGraph } from '../src/terrainEngine.ts'
+import type { TerrainGraph } from '../src/engine/terrainEngine.ts'
 import {
   DEFAULT_MINECRAFT_CONFIG,
   analyzeCompatibility,
@@ -11,7 +11,7 @@ import {
   serializeIntegrationPackage,
   validateMinecraftExport,
   type MinecraftConfig,
-} from '../src/minecraftExport.ts'
+} from '../src/minecraft/minecraftExport.ts'
 
 const world = { minY: -64, maxY: 319, seaLevel: 63 }
 
