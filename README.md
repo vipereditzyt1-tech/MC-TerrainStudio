@@ -137,6 +137,9 @@ The pieces you are most likely to touch are each in one place:
   `window.terrainProjects` type comes from that same contract, so a mismatch is a compile error.
 - **A new world setting** — `WorldSettings` in `src/engine/terrainEngine.ts` plus the panel in
   `src/world/WorldSettingsPanel.tsx`; the project format validates it in `src/project/project.ts`.
+- **A visual change** — the palette and type tokens live in `src/editor/index.css`; component rules
+  live in `src/editor/design.css`, which loads after `App.css` and overrides it. `App.css` holds the
+  original layout layer; new styling belongs in `design.css` so the identity stays in one file.
 - **A release** — push a `v*` tag. The release workflow runs the same gates as CI, builds all three
   installers and publishes them with checksums.
 

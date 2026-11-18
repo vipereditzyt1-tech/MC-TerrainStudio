@@ -1,16 +1,71 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
+/*
+ * Base layer and the single source of the palette. Terrain Studio is a cartographic workbench:
+ * warm paper surfaces, ink text, one oxide accent for selection and primary actions, hairline
+ * rules instead of shadows, and no blur or gradient anywhere. Every component colour comes from
+ * a token here, so a change of identity is a change to this block.
+ */
 :root {
-    font-family: Inter, "SF Pro Text", -apple-system, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-    color: #eef3f9;
-    background: #06090d;
-    color-scheme: dark;
+    /* Surfaces, lightest at the work surface */
+    --paper: #e6e2da;
+    --paper-2: #eeeae3;
+    --surface: #f9f8f4;
+    --surface-2: #f1eee7;
+    --surface-3: #e9e5dd;
+
+    /* Ink */
+    --ink-1: #1a1c1d;
+    --ink-2: #454a4d;
+    --ink-3: #63696c;
+    --ink-4: #7d8285;
+
+    /* Rules */
+    --hair: #d6d1c7;
+    --hair-strong: #bfb9ae;
+
+    /* One accent: oxide red, for selection, focus and the primary action only */
+    --accent: #a2411a;
+    --accent-strong: #86340f;
+    --accent-soft: rgba(162, 65, 26, 0.12);
+    --accent-line: #a2411a;
+    --accent-ink: #fdf8f4;
+    --warn: #7d5f14;
+    --danger: #8c2f22;
+    --ok: #2f6647;
+
+    /* Component-shaped tokens the older stylesheet consumes */
+    --text-1: var(--ink-1);
+    --text-2: var(--ink-2);
+    --text-3: var(--ink-3);
+    --text-4: var(--ink-4);
+    --glass-fill: var(--surface-2);
+    --glass-fill-strong: var(--surface);
+    --glass-line: var(--hair);
+    --glass-line-strong: var(--hair-strong);
+    --glass-specular: none;
+    --blur-chrome: none;
+    --blur-panel: none;
+
+    --radius-lg: 3px;
+    --radius-md: 2px;
+    --radius-sm: 2px;
+
+    --shadow-panel: 0 1px 0 rgba(26, 28, 29, 0.06);
+    --shadow-raised: 0 1px 0 rgba(26, 28, 29, 0.08);
+
+    --font-ui: "Segoe UI Variable Text", "Segoe UI", Inter, -apple-system, system-ui, sans-serif;
+    --font-mono: "Cascadia Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+    --ease: cubic-bezier(0.2, 0.6, 0.35, 1);
+
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--ink-1);
+    background: var(--paper);
+    color-scheme: light;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-optical-sizing: auto;
-    font-feature-settings: "cv05" 1, "cv08" 1, "ss03" 1;
 }
 
 * {
@@ -24,7 +79,7 @@ html, body, #root {
     min-width: 900px;
     min-height: 600px;
     overflow: hidden;
-    background: #06090d;
+    background: var(--paper);
 }
 
 button, input, select, textarea {
@@ -38,8 +93,8 @@ button {
 }
 
 ::selection {
-    background: rgba(127, 224, 207, 0.28);
-    color: #f4fffd;
+    background: var(--accent-soft);
+    color: var(--ink-1);
 }
 
 /* Narrow screens: the rules above pin a 900px minimum, which a phone cannot show.

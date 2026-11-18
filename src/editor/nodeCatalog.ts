@@ -50,12 +50,25 @@ export type LibraryGroup = {
     nodes: LibraryNode[];
 };
 
-const SOURCE = '#56aaff';
-const GEN = '#c18aff';
-const MATH = '#ffb45c';
-const SHAPE = '#f0a35e';
-const DISTORT = '#6fd8ff';
-const OUT = '#62d6a5';
+// Category colours are a muted earth-and-ink family, not a rainbow: they encode node class and
+// nothing else, so they stay legible on paper without competing with the oxide accent.
+const SOURCE = '#4c6b82';   // slate blue — where the graph reads world space
+const GEN = '#7d5b86';      // heather — sampled fields
+const MATH = '#9a6a2c';     // ochre — arithmetic
+const SHAPE = '#6f6b3a';    // olive — remapping
+const DISTORT = '#3f6f6a';  // teal — domain warps
+const OUT = '#3d3f41';      // ink — graph output
+
+/** The same accents, keyed by the category label a node carries, so nothing re-types a hex. */
+export const categoryAccent: Record<string, string> = {
+    INPUT: SOURCE,
+    GENERATION: GEN,
+    COMBINE: MATH,
+    OPERATIONS: MATH,
+    SHAPE: SHAPE,
+    DISTORT: DISTORT,
+    OUTPUT: OUT,
+};
 
 /** The node palette. Every entry compiles into both the preview engine and the generated Java. */
 export const libraryGroups: LibraryGroup[] = [

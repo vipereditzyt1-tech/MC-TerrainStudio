@@ -27,6 +27,7 @@ import {
 
 import "@xyflow/react/dist/style.css";
 import "./App.css";
+import "./design.css";
 import { compileGraph } from "../engine/terrainEngine.ts";
 import type { CustomTextureGraph, TerrainKind, WorldSettings } from "../engine/terrainEngine.ts";
 import { parseProject, projectGraph, toTerrainGraph, type ProjectDocument } from "../project/project.ts";
@@ -40,6 +41,7 @@ import {
     type NoiseType,
 } from "./nodeCatalog.ts";
 import { parameterFields } from "./nodeFields.ts";
+import { categoryAccent } from "./nodeCatalog.ts";
 import WorldView from "../world/WorldView.tsx";
 import WorldSettingsPanel from "../world/WorldSettingsPanel.tsx";
 import { worldPresets, type WorldPreset } from "../minecraft/worldPresets.ts";
@@ -113,7 +115,7 @@ const initialNodes: TerrainNode[] = [
             category: "INPUT",
             description: "Provides world-space coordinates.",
             value: "World Position",
-            accent: "#56aaff",
+            accent: categoryAccent.INPUT,
         },
     },
     {
@@ -129,7 +131,7 @@ const initialNodes: TerrainNode[] = [
             category: "GENERATION",
             description: "Generates broad continental landforms.",
             value: "Scale: 0.0015",
-            accent: "#c18aff",
+            accent: categoryAccent.GENERATION,
             noiseType: "minecraft-continentalness",
         },
     },
@@ -146,7 +148,7 @@ const initialNodes: TerrainNode[] = [
             category: "GENERATION",
             description: "Generates ridge-like terrain structures.",
             value: "Scale: 0.008",
-            accent: "#c18aff",
+            accent: categoryAccent.GENERATION,
             noiseType: "ridged",
         },
     },
@@ -160,7 +162,7 @@ const initialNodes: TerrainNode[] = [
             category: "OPERATIONS",
             description: "Combines terrain signals.",
             value: "Method: Add",
-            accent: "#ffb45c",
+            accent: categoryAccent.OPERATIONS,
         },
     },
     {
@@ -173,7 +175,7 @@ const initialNodes: TerrainNode[] = [
             category: "OUTPUT",
             description: "Defines the final terrain height.",
             value: "Height Field",
-            accent: "#62d6a5",
+            accent: categoryAccent.OUTPUT,
         },
     },
 ];
@@ -364,12 +366,8 @@ function TerrainNodeComponent({
     data,
     selected,
 }: NodeProps<TerrainNode>) {
-    const nodeStyle: CSSProperties = selected
-        ? {
-            borderColor: data.accent,
-            boxShadow: `inset 0 1px 0 rgba(255,255,255,.2), 0 0 0 1px ${data.accent}, 0 26px 50px -26px rgba(0,0,0,.95), 0 0 44px -16px ${data.accent}`,
-        }
-        : {};
+    // Selection is a flat outline in the node's own category colour — no glow, no elevation.
+    const nodeStyle: CSSProperties = selected ? { borderColor: data.accent } : {};
 
     return (
         <div className="terrain-node" style={nodeStyle}>
@@ -530,17 +528,17 @@ function TexturePreview({ type = "perlin", mode = "2d", large = false }: { type?
                 const value = values[y * size + x];
                 const height = mode === "3d" ? value * 0.75 + 0.15 : value;
                 const index = (y * size + x) * 4;
-                const shade = Math.round(25 + height * 180);
-                image.data[index] = shade * 0.58;
-                image.data[index + 1] = Math.min(240, shade * 0.82);
-                image.data[index + 2] = Math.min(255, shade + 35);
+                // Ink on paper, not a blue heat map: the sample belongs to the same surface as the app.
+                image.data[index] = Math.round(246 - height * 208);
+                image.data[index + 1] = Math.round(243 - height * 201);
+                image.data[index + 2] = Math.round(236 - height * 191);
                 image.data[index + 3] = 255;
             }
         }
         context.putImageData(image, 0, 0);
         if (mode === "3d") {
             context.globalAlpha = 0.3;
-            context.strokeStyle = "#d9f3ff";
+            context.strokeStyle = "#262a2c";
             const azRad = (azimuth * Math.PI) / 180;
             const elRad = (elevation * Math.PI) / 180;
             for (let y = 0; y < size; y += Math.max(12, Math.floor(size / 18))) {
@@ -1579,15 +1577,15 @@ function App() {
             nodes: [
                 {
                     id: `${id}-input`, type: "terrain", position: { x: 120, y: 180 },
-                    data: { title: "Texture Coordinates", kind: "coordinates", category: "INPUT", description: "World-space coordinates supplied by the parent graph.", value: "Vector 3", accent: "#56aaff" },
+                    data: { title: "Texture Coordinates", kind: "coordinates", category: "INPUT", description: "World-space coordinates supplied by the parent graph.", value: "Vector 3", accent: categoryAccent.INPUT },
                 },
                 {
                     id: `${id}-noise`, type: "terrain", position: { x: 360, y: 180 },
-                    data: { title: "Texture Noise", kind: "noise", noiseType: "perlin", scale: 0.02, amplitude: 1, seed: 23, category: "GENERATION", description: "The pattern this texture returns. Add more nodes to shape it.", value: "Perlin", accent: "#c18aff" },
+                    data: { title: "Texture Noise", kind: "noise", noiseType: "perlin", scale: 0.02, amplitude: 1, seed: 23, category: "GENERATION", description: "The pattern this texture returns. Add more nodes to shape it.", value: "Perlin", accent: categoryAccent.GENERATION },
                 },
                 {
                     id: `${id}-output`, type: "terrain", position: { x: 620, y: 180 },
-                    data: { title: "Custom Noise Output", kind: "output", category: "OUTPUT", description: "Returns the generated scalar field.", value: "Height Field", accent: "#62d6a5" },
+                    data: { title: "Custom Noise Output", kind: "output", category: "OUTPUT", description: "Returns the generated scalar field.", value: "Height Field", accent: categoryAccent.OUTPUT },
                 },
             ],
             edges: [
@@ -2186,11 +2184,11 @@ function App() {
                                     selectionKeyCode="Shift"
                                     multiSelectionKeyCode="Shift"
                                 >
-                                    <Background gap={22} size={1} color="#2b3543" />
+                                    <Background gap={22} size={1} color="#c9c2b4" />
                                     <Controls />
                                     <MiniMap
-                                        nodeColor={(node) => (node.data as TerrainNodeData)?.accent || "#596273"}
-                                        maskColor="rgba(5, 9, 14, 0.72)"
+                                        nodeColor={(node) => (node.data as TerrainNodeData)?.accent || "#a8a294"}
+                                        maskColor="rgba(246, 243, 236, 0.72)"
                                     />
                                 </ReactFlow>
 
