@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+env:
+  # The installers are unsigned; never try to auto-discover a signing identity on a runner.
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
 jobs:
   windows-installers:
     name: windows installers
@@ -33,25 +37,40 @@ jobs:
       - name: Test
         run: npm test
 
-      # electron-builder writes nsis, portable and msi into release/<version>/.
-      - name: Package
-        run: npm run build
+      # Renderer, main and preload bundles first, so a packaging failure below cannot be a
+      # TypeScript or Vite failure wearing a different hat.
+      - name: Bundle
+        run: npm run build:renderer
+
+      # The two targets that only need electron-builder's own cached toolchain.
+      - name: Package NSIS and portable
+        run: npx electron-builder --win nsis portable --publish never
+
+      # Windows Installer needs the WiX toolchain; if that is unavailable on the runner, the
+      # rest of the release still ships and this step reports the failure on its own.
+      - name: Package MSI
+        continue-on-error: true
+        run: npx electron-builder --win msi --publish never
 
       - name: Checksums
         shell: bash
         run: |
           cd "release/$(ls release | head -n 1)"
-          sha256sum *.exe *.msi > SHA256SUMS.txt
+          ls -l
+          sha256sum *.exe *.msi > SHA256SUMS.txt || sha256sum *.exe > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: terrain-studio-windows
           path: |
             release/**/*.exe
             release/**/*.msi
+            release/**/*.blockmap
             release/**/SHA256SUMS.txt
-          if-no-files-found: error
+            release/**/builder-debug.yml
+          if-no-files-found: warn
 
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/')
@@ -60,4 +79,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd "release/$(ls release | head -n 1)"
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "Terrain Studio $GITHUB_REF_NAME" *.exe *.msi SHA256SUMS.txt
+          ASSETS=$(ls *.exe *.msi 2>/dev/null | tr '\n' ' ')
+          echo "publishing: $ASSETS SHA256SUMS.txt"
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
+            --notes "Terrain Studio $GITHUB_REF_NAME. Windows installers (NSIS setup, portable, and MSI when the runner could build it) with SHA256SUMS.txt. Unsigned: SmartScreen warns on a machine that has not seen the build before." \
+            $ASSETS SHA256SUMS.txt
